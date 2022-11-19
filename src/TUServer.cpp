@@ -3,7 +3,7 @@
 
 
 TUServer::TUServer() :
-	parsing_pool(2)
+	parsing_pool(num_threads)
 {
 	index = std::make_shared<Index>(false, false);
 	parsing_pool.start();

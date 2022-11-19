@@ -3,6 +3,11 @@
 #include <stdexcept>
 
 
+bool source_range_t::equals(const source_range_t &other) const{
+	return begin.equals(other.begin) && end.equals(other.end);
+}
+
+
 bool source_range_t::contains(const source_location_t &location) const{
 	if(location.file != begin.file || location.file != end.file){
 		return false;

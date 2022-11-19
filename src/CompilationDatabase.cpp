@@ -34,7 +34,7 @@ void CompilationDatabase::read_from_build_directory(const std::string &path){
 		entry.emplace_back();
 		auto &args = entry.back();
 		for(size_t k=0; k<clang_CompileCommand_getNumArgs(command); k++){
-			if(k == 1 && inject_include_directories){
+			if(inject_include_directories && k == 1){
 				// Now that's what I call a hack...
 				args.push_back("-I/usr/lib/clang/" + clang_version + "/include");
 			}

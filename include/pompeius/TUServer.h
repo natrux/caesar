@@ -33,6 +33,7 @@ public:
 private:
 	mutable std::mutex mutex;
 	std::shared_ptr<Index> index;
+	const size_t num_threads = 2;
 	ThreadPool parsing_pool;
 	double auto_parse_threshold = 1.0;
 	CompilationDatabase current_database;

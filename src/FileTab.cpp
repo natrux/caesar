@@ -347,6 +347,7 @@ gchar *FileTab::on_query_source_mark_tooltip_text(GtkSourceMarkAttributes */*att
 	const auto find = self->source_mark_diagnostics.find(mark);
 	if(find != self->source_mark_diagnostics.end()){
 		const diagnostic_t &dig = find->second;
+		size_t num_fixits = 0;
 		if(!dig.category_name.empty()){
 			result += dig.category_name;
 			if(!dig.command_line_option.empty()){
@@ -355,11 +356,18 @@ gchar *FileTab::on_query_source_mark_tooltip_text(GtkSourceMarkAttributes */*att
 			result += ":\n";
 		}
 		result += dig.message;
-		const size_t num_children = dig.children.size();
-		if(num_children > 0){
-			result += "\n\nClick to show " + std::to_string(num_children) + " child" + (num_children == 1 ? "" : "ren") + ".";
+		num_fixits += dig.fixits.size();
+
+		for(const auto &child : dig.children){
+			result += "\n\n";
+			if(!child.location.equals(dig.location)){
+				result += "On " + child.location.file + ":" + std::to_string(child.location.row) + ":" + std::to_string(child.location.column) + ": ";
+			}
+			result += child.message;
+			num_fixits += child.fixits.size();
 		}
-		if(!dig.fixits.empty()){
+
+		if(num_fixits > 0){
 			result += "\n\nClick to fixit.";
 		}
 	}
@@ -948,16 +956,16 @@ void FileTab::on_line_mark_activated(Gtk::TextIter &position, GdkEvent *event){
 			const auto find = source_mark_diagnostics.find(mark->gobj());
 			if(find != source_mark_diagnostics.end()){
 				const diagnostic_t &diagnostic = find->second;
-				const size_t num_diagnostics = diagnostic.fixits.size();
+				std::vector<fixit_t> fixits = diagnostic.fixits;
+				for(const auto &child : diagnostic.children){
+					fixits.insert(fixits.end(), child.fixits.begin(), child.fixits.end());
+				}
+				const size_t num_diagnostics = fixits.size();
 				if(num_diagnostics == 1){
 					// faster
-					apply_fixit(buffer, diagnostic.fixits.front());
+					apply_fixit(buffer, fixits.front());
 				}else if(num_diagnostics > 1){
-					apply_fixits(buffer, diagnostic.fixits);
-				}
-				for(const diagnostic_t &child : diagnostic.children){
-					// TODO: They don't disappear on their own. On second activation they double.
-					show_diagnostic(child, buffer);
+					apply_fixits(buffer, fixits);
 				}
 			}
 		}

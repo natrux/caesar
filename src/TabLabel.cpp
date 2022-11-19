@@ -21,7 +21,7 @@ TabLabel::TabLabel(const std::string &text):
 
 void TabLabel::set_text(const std::string &text_){
 	text = text_;
-	std::string show = (modified ? "*"+text : " "+text);
+	const std::string show = (modified ? "*"+text : " "+text);
 	label.set_text(show);
 }
 

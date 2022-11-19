@@ -9,6 +9,7 @@ struct source_range_t{
 	source_location_t begin;
 	source_location_t end;
 
+	bool equals(const source_range_t &other) const;
 	bool contains(const source_location_t &location) const;
 	bool contains(const source_range_t &range) const;
 	bool overlaps(const source_range_t &range) const;
