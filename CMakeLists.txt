@@ -6,9 +6,15 @@ add_compile_options(
 	-Wall -Wextra
 	-Wsuggest-override
 	-Wno-cpp                        # https://gitlab.gnome.org/GNOME/gtksourceviewmm/-/issues/3
-	-Wno-deprecated-declarations    # https://gitlab.gnome.org/GNOME/gtksourceview/-/issues/84
 
 	#-Werror
+)
+add_compile_options(
+	# https://gitlab.gnome.org/GNOME/gtksourceview/-/issues/84
+	-DGLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_60
+
+	# if your build fails because of glib version, comment out the above line and uncomment the following one.
+	#-Wno-deprecated-declarations
 )
 SET(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_BUILD_TYPE Debug)

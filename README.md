@@ -4,7 +4,7 @@ An IDE for C/C++ based on libclang and GtkSourceView.
 
 At the moment, Caesar is meant to help writing code and nothing else.
 No project management, no compilation and no debugging.
-Please do all these things by writing proper build files, invoking the command line and using and standalone debugger.
+Please do all these things by writing proper build files, invoking the command line and using a standalone debugger.
 
 # Build
 
