@@ -122,13 +122,19 @@ add_executable(caesar
 	src/main.cpp
 )
 
-target_include_directories(caesar PUBLIC
-	include/
-)
-
 target_link_libraries(caesar
 	pompeius
 	brutus
 	crassus
+)
+
+
+add_executable(test
+	src/test.cpp
+)
+
+target_link_libraries(test
+	brutus
+	pompeius
 )
 
