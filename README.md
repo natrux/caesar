@@ -41,7 +41,8 @@ make
 To use Caesar with your existing project, make sure your project exports a `compile_commands.json`
 (this is the only thing that I know of that libclang accepts as input).
 For a CMake project, you can achieve that by enabling the flag `CMAKE_EXPORT_COMPILE_COMMANDS`.
-Caesar itself is set up to export the commands, so you can use it as a first try.
+Caesar itself and the little `testcode` project inside are
+set up to export the commands, so you can use them as a first try.
 
 In the "new project" tab, select the folder of your project (used to search for files) and the build directory
 (used to find the build configuration).
