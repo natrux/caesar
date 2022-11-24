@@ -72,12 +72,17 @@ private:
 	Gsv::View source_view;
 	std::unique_ptr<Gtk::Widget> source_map;
 	struct{
+		Gtk::Grid grid;
+		Gtk::Button completion;
+		Gtk::Button jump_to_declaration;
+		Gtk::Button jump_to_definition;
+	} shortcuts;
+	struct{
 		Gtk::Grid bar;
 		Gtk::Label something;
 		Gtk::Separator sep_1;
 		Gtk::Label position;
 	} status;
-	Gtk::Button button_completion;
 	std::function<void(const source_location_t &)> callback_open_location;
 
 	Glib::RefPtr<Gtk::TextTag> tag_variable_def;
@@ -140,6 +145,7 @@ private:
 	source_location_t get_current_location();
 	source_location_t get_location(const Gtk::TextIter &iter) const;
 	source_location_t get_location(int x, int y) const;
+	cursor_t get_cursor_at(const source_location_t &location) const;
 	bool check_scroll_to_insert();
 	void update_highlighting();
 	bool update_cursor_highlighting();
@@ -149,6 +155,8 @@ private:
 	void update_file_content();
 	void update_translation_units();
 	void show_diagnostic(const diagnostic_t &diagnostic, const Glib::RefPtr<Gsv::Buffer> &buffer);
+	void jump_to_declaration(const source_location_t &location);
+	void jump_to_definition(const source_location_t &location);
 	bool on_update_timeout();
 	bool on_scroll(GdkEventScroll *event);
 	bool on_key_press_event(GdkEventKey *event) override;
@@ -160,5 +168,7 @@ private:
 	void on_button_choose_tu();
 	void on_button_save();
 	void on_button_completion();
+	void on_jump_to_declaration();
+	void on_jump_to_definition();
 };
 

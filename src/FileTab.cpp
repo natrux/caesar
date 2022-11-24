@@ -223,8 +223,19 @@ FileTab::FileTab(const std::string &path_file)
 		status.bar.attach(status.position, col++, 0, 1, 1);
 	}
 
-	button_completion.set_label("Completion");
-	button_completion.signal_clicked().connect(std::bind(&FileTab::on_button_completion, this));
+	shortcuts.completion.set_label("Completion (Ctrl+,)");
+	shortcuts.completion.set_hexpand(true);
+	shortcuts.completion.signal_clicked().connect(std::bind(&FileTab::on_button_completion, this));
+	shortcuts.jump_to_declaration.set_label("Jump to declaration (Shift+Click)");
+	shortcuts.jump_to_declaration.set_hexpand(true);
+	shortcuts.jump_to_declaration.signal_clicked().connect(std::bind(&FileTab::on_jump_to_declaration, this));
+	shortcuts.jump_to_definition.set_label("Jump to definition (Ctrl+Click)");
+	shortcuts.jump_to_definition.set_hexpand(true);
+	shortcuts.jump_to_definition.signal_clicked().connect(std::bind(&FileTab::on_jump_to_definition, this));
+	shortcuts.grid.attach(shortcuts.completion, 0, 0, 1, 1);
+	shortcuts.grid.attach(shortcuts.jump_to_declaration, 1, 0, 1, 1);
+	shortcuts.grid.attach(shortcuts.jump_to_definition, 2, 0, 1, 1);
+
 	this->signal_scroll_event().connect(sigc::mem_fun(*this, &FileTab::on_scroll));
 	Glib::signal_timeout().connect(sigc::mem_fun(*this, &FileTab::on_update_timeout), 100, Glib::PRIORITY_LOW);
 
@@ -235,7 +246,7 @@ FileTab::FileTab(const std::string &path_file)
 	attach(grid_choose_tu, 0, 0, 2, 1);
 	attach(source_view_scroller, 0, 1, 1, 1);
 	attach(*source_map, 1, 1, 1, 1);
-	attach(button_completion, 0, 2, 2, 1);
+	attach(shortcuts.grid, 0, 2, 2, 1);
 	attach(status.bar, 0, 3, 2, 1);
 	// This call must happen AFTER the source view has been added to its parent!
 	gtk_source_map_set_view(GTK_SOURCE_MAP(source_map->gobj()), source_view.gobj());
@@ -401,6 +412,15 @@ source_location_t FileTab::get_location(int x, int y) const{
 	Gtk::TextIter iter;
 	source_view.get_iter_at_location(iter, buffer_x, buffer_y);
 	return get_location(iter);
+}
+
+
+cursor_t FileTab::get_cursor_at(const source_location_t &location) const{
+	std::unique_lock<std::mutex> lock;
+	if(file->try_with_tu(lock) && file->has_translation_unit_ready(lock)){
+		return file->get_cursor_at(lock, location);
+	}
+	throw std::runtime_error("Translation unit not ready");
 }
 
 
@@ -848,6 +868,59 @@ void FileTab::show_diagnostic(const diagnostic_t &diagnostic, const Glib::RefPtr
 }
 
 
+void FileTab::jump_to_declaration(const source_location_t &location){
+	if(!callback_open_location || !file->has_translation_unit()){
+		return;
+	}
+
+	std::shared_ptr<cursor_t> cursor;
+	try{
+		cursor = std::make_shared<cursor_t>(get_cursor_at(location));
+	}catch(const std::runtime_error &/*err*/){
+	}
+
+	if(cursor){
+		std::shared_ptr<const cursor_t> target;
+		if(cursor->is_declaration){
+			target = cursor;
+		}else if(cursor->reference.exists){
+			target = cursor->reference.get();
+		}
+		if(target && target->canonical_declaration.exists){
+			target = target->canonical_declaration.get();
+		}
+		if(target){
+			callback_open_location(target->location);
+		}
+	}
+}
+
+
+void FileTab::jump_to_definition(const source_location_t &location){
+	if(!callback_open_location || !file->has_translation_unit()){
+		return;
+	}
+
+	std::shared_ptr<cursor_t> cursor;
+	try{
+		cursor = std::make_shared<cursor_t>(get_cursor_at(location));
+	}catch(const std::runtime_error &/*err*/){
+	}
+
+	if(cursor){
+		std::shared_ptr<const cursor_t> target;
+		if(cursor->is_definition){
+			target = cursor;
+		}else if(cursor->definition.exists){
+			target = cursor->definition.get();
+		}
+		if(target){
+			callback_open_location(target->location);
+		}
+	}
+}
+
+
 bool FileTab::on_update_timeout(){
 	update_file_content();
 	update_translation_units();
@@ -900,41 +973,12 @@ bool FileTab::on_button_press(GdkEventButton *event){
 	const bool is_shift = ((event->state & GDK_SHIFT_MASK) != 0);
 	const bool is_ctrl = ((event->state & GDK_CONTROL_MASK) != 0);
 
-	if(event->button == GDK_BUTTON_PRIMARY && (is_shift || is_ctrl) && file->has_translation_unit()){
-		std::shared_ptr<cursor_t> cursor;
-
-		{
-			std::unique_lock<std::mutex> lock;
-			if(file->try_with_tu(lock) && file->has_translation_unit_ready(lock)){
-				const auto location = get_location(event->x, event->y);
-				try{
-					cursor = std::make_shared<cursor_t>(file->get_cursor_at(lock, location));
-				}catch(const std::runtime_error &err){
-				}
-			}
-		}
-
-		if(cursor){
-			std::shared_ptr<const cursor_t> target;
-			if(is_shift){
-				if(cursor->is_declaration){
-					target = cursor;
-				}else if(cursor->reference.exists){
-					target = cursor->reference.get();
-				}
-				if(target && target->canonical_declaration.exists){
-					target = target->canonical_declaration.get();
-				}
-			}else if(is_ctrl){
-				if(cursor->is_definition){
-					target = cursor;
-				}else if(cursor->definition.exists){
-					target = cursor->definition.get();
-				}
-			}
-			if(target && callback_open_location){
-				callback_open_location(target->location);
-			}
+	if(event->button == GDK_BUTTON_PRIMARY && (is_shift || is_ctrl)){
+		const auto location = get_location(event->x, event->y);
+		if(is_shift){
+			jump_to_declaration(location);
+		}else if(is_ctrl){
+			jump_to_definition(location);
 		}
 	}
 	return true;
@@ -1020,6 +1064,16 @@ void FileTab::on_button_completion(){
 	context->reference();
 
 	completion->show(completion->get_providers(), context);
+}
+
+
+void FileTab::on_jump_to_declaration(){
+	jump_to_declaration(get_current_location());
+}
+
+
+void FileTab::on_jump_to_definition(){
+	jump_to_definition(get_current_location());
 }
 
 
