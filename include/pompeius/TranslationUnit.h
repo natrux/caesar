@@ -41,6 +41,8 @@ public:
 	bool is_initialized() const;
 	bool is_ready() const;
 	bool is_ready(const std::unique_lock<std::mutex> &lock) const;
+	bool is_accessible() const;
+	bool is_accessible(const std::unique_lock<std::mutex> &lock) const;
 
 	cursor_t get_location(const std::string &file, size_t row, size_t column) const;
 	cursor_t get_location(const std::unique_lock<std::mutex> &lock, const std::string &file, size_t row, size_t column) const;
@@ -75,6 +77,7 @@ private:
 		READY,
 		SUSPENDED,
 		OUTDATED,
+		PARSING,
 	};
 	mutable std::mutex mutex;
 	mutable std::mutex mutex_parsed_info;

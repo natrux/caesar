@@ -237,7 +237,7 @@ FileTab::FileTab(const std::string &path_file)
 	shortcuts.grid.attach(shortcuts.jump_to_definition, 2, 0, 1, 1);
 
 	this->signal_scroll_event().connect(sigc::mem_fun(*this, &FileTab::on_scroll));
-	Glib::signal_timeout().connect(sigc::mem_fun(*this, &FileTab::on_update_timeout), 100, Glib::PRIORITY_LOW);
+	Glib::signal_timeout().connect(sigc::mem_fun(*this, &FileTab::on_update_timeout), update_interval_ms, Glib::PRIORITY_LOW);
 
 	add_events(Gdk::KEY_PRESS_MASK);
 
@@ -756,14 +756,15 @@ bool FileTab::update_diagnostics_highlighting(){
 }
 
 
-void FileTab::update_file_content(){
-	if(status_file_content == update_status_e::OUTDATED){
-		status_file_content = update_status_e::PENDING;
-	}else if(status_file_content == update_status_e::PENDING){
-		const auto buffer = source_view.get_source_buffer();
-		file->set_content(buffer->get_text());
-		set_display_name();
-		status_file_content = update_status_e::UP_TO_DATE;
+void FileTab::update_translation_unit(){
+	if(file->has_translation_unit()){
+		if(status_translation_unit == update_status_e::OUTDATED){
+			status_translation_unit = update_status_e::PENDING;
+		}else if(status_translation_unit == update_status_e::PENDING){
+			if(file->parse_translation_unit()){
+				status_translation_unit = update_status_e::UP_TO_DATE;
+			}
+		}
 	}
 }
 
@@ -922,7 +923,11 @@ void FileTab::jump_to_definition(const source_location_t &location){
 
 
 bool FileTab::on_update_timeout(){
-	update_file_content();
+	update_counter++;
+
+	if(update_counter % update_translation_unit_divider == 0){
+		update_translation_unit();
+	}
 	update_translation_units();
 	update_highlighting();
 
@@ -965,7 +970,10 @@ bool FileTab::on_source_view_mouse_moved(GdkEventMotion */*event*/){
 
 
 void FileTab::on_text_changed(){
-	status_file_content = update_status_e::OUTDATED;
+	const auto buffer = source_view.get_source_buffer();
+	file->set_content(buffer->get_text());
+	set_display_name();
+	status_translation_unit = update_status_e::OUTDATED;
 }
 
 
@@ -1036,6 +1044,9 @@ void FileTab::on_button_choose_tu(){
 	}else if(had_unit && !new_unit){
 		source_view.get_source_buffer()->set_language(language_none);
 	}
+	if(new_unit && !new_unit->is_initialized()){
+		status_translation_unit = update_status_e::OUTDATED;
+	}
 	status_highlight_cursor = update_status_e::OUTDATED;
 	status_highlight_semantics = update_status_e::OUTDATED;
 	status_highlight_diagnostics = update_status_e::OUTDATED;
@@ -1043,13 +1054,8 @@ void FileTab::on_button_choose_tu(){
 
 
 void FileTab::on_button_save(){
-	if(status_file_content != update_status_e::UP_TO_DATE){
-		auto buffer = source_view.get_source_buffer();
-		file->set_content(buffer->get_text());
-	}
 	file->save();
 	set_display_name();
-	status_file_content = update_status_e::UP_TO_DATE;
 }
 
 

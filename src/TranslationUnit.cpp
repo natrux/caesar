@@ -103,10 +103,12 @@ void TranslationUnit::file_unmodified(const std::string &file){
 
 void TranslationUnit::parse(){
 	std::lock_guard<std::mutex> lock(mutex);
+	const state_e old_state = state;
+	switch_state(state_e::PARSING);
 
 	std::vector<CXUnsavedFile> unsaved_files_for_clang = get_unsaved_files_for_clang();
 
-	if(state == state_e::NOT_INITIALIZED){
+	if(old_state == state_e::NOT_INITIALIZED){
 		const int parse_options = default_parse_options;
 		std::vector<const char *> commands_for_clang;
 		for(const auto &arg : compile_commands){
@@ -165,6 +167,21 @@ bool TranslationUnit::is_ready() const{
 bool TranslationUnit::is_ready(const std::unique_lock<std::mutex> &lock) const{
 	check_lock(lock);
 	return (state == state_e::READY);
+}
+
+
+bool TranslationUnit::is_accessible() const{
+	std::unique_lock<std::mutex> lock;
+	if(try_with(lock)){
+		return state != state_e::PARSING;
+	}
+	return false;
+}
+
+
+bool TranslationUnit::is_accessible(const std::unique_lock<std::mutex> &lock) const{
+	check_lock(lock);
+	return (state != state_e::PARSING);
 }
 
 

@@ -56,6 +56,18 @@ std::string File::get_content() const{
 }
 
 
+bool File::parse_translation_unit() const{
+	if(!current_unit){
+		throw std::logic_error("No translation unit set");
+	}
+	if(!report_modified_buffered){
+		current_unit->parse_async();
+		return true;
+	}
+	return false;
+}
+
+
 bool File::is_dirty() const{
 	return content_differs_file;
 }
@@ -149,15 +161,15 @@ tu_file_match_e File::match_translation_unit(const std::shared_ptr<const Transla
 
 
 void File::set_translation_unit(std::shared_ptr<TranslationUnit> unit){
+	if(current_unit == unit){
+		return;
+	}
 	if(current_unit){
 		current_unit->file_unmodified(path);
 	}
 	current_unit = unit;
 	if(current_unit){
 		report_modified();
-		if(!current_unit->is_initialized()){
-			current_unit->parse_async();
-		}
 	}
 }
 
@@ -248,13 +260,12 @@ void File::notify_updated_tu(std::shared_ptr<TranslationUnit> unit){
 void File::report_modified(){
 	report_modified_buffered = false;
 	if(current_unit){
-		if(current_unit->is_ready()){
+		if(current_unit->is_accessible()){
 			if(is_dirty()){
 				current_unit->file_modified(path, content);
 			}else{
 				current_unit->file_unmodified(path);
 			}
-			current_unit->parse_async();
 		}else{
 			report_modified_buffered = true;
 		}

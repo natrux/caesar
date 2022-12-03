@@ -45,10 +45,13 @@ private:
 		OUTDATED,
 		PENDING,
 	};
+	unsigned int update_interval_ms = 100;
+	unsigned int update_counter = 0;
 
 	std::shared_ptr<File> file;
 	std::string current_cursor_highlight_usr;
-	update_status_e status_file_content = update_status_e::UP_TO_DATE;
+	update_status_e status_translation_unit = update_status_e::OUTDATED;
+	unsigned int update_translation_unit_divider = 5;
 	update_status_e status_highlight_cursor = update_status_e::OUTDATED;
 	update_status_e status_highlight_semantics = update_status_e::OUTDATED;
 	update_status_e status_highlight_diagnostics = update_status_e::OUTDATED;
@@ -152,7 +155,7 @@ private:
 	bool update_cursor_highlighting(const source_location_t &location);
 	bool update_semantic_highlighting();
 	bool update_diagnostics_highlighting();
-	void update_file_content();
+	void update_translation_unit();
 	void update_translation_units();
 	void show_diagnostic(const diagnostic_t &diagnostic, const Glib::RefPtr<Gsv::Buffer> &buffer);
 	void jump_to_declaration(const source_location_t &location);

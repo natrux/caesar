@@ -19,6 +19,7 @@ public:
 	void save();
 	void set_content(const std::string &content);
 	std::string get_content() const;
+	bool parse_translation_unit() const;
 	bool is_dirty() const;
 	std::unique_lock<std::mutex> with_tu() const;
 	bool try_with_tu(std::unique_lock<std::mutex> &lock) const;
