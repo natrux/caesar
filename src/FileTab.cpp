@@ -849,9 +849,8 @@ void FileTab::show_diagnostic(const diagnostic_t &diagnostic, const Glib::RefPtr
 		if(diagnostic.location.row > 0){
 			Gtk::TextIter iter = buffer->get_iter_at_line_offset(diagnostic.location.row-1, 0);
 			auto mark = buffer->create_source_mark(mark_category, iter);
-			// If we don't do this:
-			//     g_object_unref: assertion 'G_IS_OBJECT (object)' failed
-			// We are probably not allowed to free the memory.
+			// This seems to be necessary due to:
+			// https://gitlab.gnome.org/GNOME/gtksourceviewmm/-/issues/2
 			mark->reference();
 			source_mark_diagnostics[mark->gobj()] = diagnostic;
 		}
@@ -1012,13 +1011,7 @@ void FileTab::on_line_mark_activated(Gtk::TextIter &position, GdkEvent *event){
 				for(const auto &child : diagnostic.children){
 					fixits.insert(fixits.end(), child.fixits.begin(), child.fixits.end());
 				}
-				const size_t num_diagnostics = fixits.size();
-				if(num_diagnostics == 1){
-					// faster
-					apply_fixit(buffer, fixits.front());
-				}else if(num_diagnostics > 1){
-					apply_fixits(buffer, fixits);
-				}
+				apply_fixits(buffer, fixits);
 			}
 		}
 	}

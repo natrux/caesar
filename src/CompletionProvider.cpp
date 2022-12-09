@@ -250,13 +250,7 @@ bool CompletionProvider::activate_proposal_vfunc(const Glib::RefPtr<Gsv::Complet
 	const auto find = proposal_source.find(proposal);
 	if(find != proposal_source.end()){
 		const completion_t &completion = find->second;
-		const size_t num_fixits = completion.fixits.size();
-		if(num_fixits == 1){
-			// faster
-			apply_fixit(source_buffer, completion.fixits[0]);
-		}else if(num_fixits > 1){
-			apply_fixits(source_buffer, completion.fixits);
-		}
+		apply_fixits(source_buffer, completion.fixits);
 		// Let the source view do the rest
 		return false;
 	}
