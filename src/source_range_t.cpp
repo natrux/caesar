@@ -13,7 +13,10 @@ bool source_range_t::contains(const source_location_t &location) const{
 		return false;
 	}
 	const bool contains_rowcol = (location.row >= begin.row && location.row <= end.row && (location.row > begin.row || location.column >= begin.column) && (location.row < end.row || location.column <= end.column));
-	const bool contains_offset = (location.offset >= begin.offset && location.offset <= end.offset);
+	bool contains_offset = contains_rowcol;
+	if(location.offset != -1 && begin.offset != -1 && end.offset != -1){
+		contains_offset = (location.offset >= begin.offset && location.offset <= end.offset);
+	}
 
 	if(contains_rowcol != contains_offset){
 		throw std::logic_error("row/column is inconsistent with offset");

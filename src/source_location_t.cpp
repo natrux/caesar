@@ -9,7 +9,7 @@ bool source_location_t::equals(const source_location_t &other) const{
 		file == other.file &&
 		row == other.row &&
 		column == other.column &&
-		offset == other.offset &&
+		(offset == -1 || other.offset == -1 || offset == other.offset) &&
 	true;
 }
 
