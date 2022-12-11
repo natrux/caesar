@@ -9,6 +9,7 @@
 #include <vector>
 #include <set>
 #include <memory>
+#include <mutex>
 
 
 class File : public TUObserver{
@@ -52,9 +53,10 @@ private:
 	size_t file_size = 0;
 	size_t file_hash = -1;
 	bool content_differs_file = false;
+	mutable std::mutex mutex_is_reported;
+	bool is_reported = true;
 	std::string path;
 	std::string content;
-	bool report_modified_buffered = false;
 	std::shared_ptr<TranslationUnit> current_unit;
 
 	void report_modified();

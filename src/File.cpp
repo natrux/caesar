@@ -40,14 +40,22 @@ void File::save(){
 	file_size = content.size();
 	file_hash = hasher(content);
 	content_differs_file = false;
-	report_modified();
+	{
+		std::lock_guard<std::mutex> lock(mutex_is_reported);
+		is_reported = false;
+		report_modified();
+	}
 }
 
 
 void File::set_content(const std::string &content_){
 	content = content_;
 	content_differs_file = (content.size() != file_size) || (hasher(content) != file_hash);
-	report_modified();
+	{
+		std::lock_guard<std::mutex> lock(mutex_is_reported);
+		is_reported = false;
+		report_modified();
+	}
 }
 
 
@@ -60,9 +68,12 @@ bool File::parse_translation_unit() const{
 	if(!current_unit){
 		throw std::logic_error("No translation unit set");
 	}
-	if(!report_modified_buffered){
-		current_unit->parse_async();
-		return true;
+	{
+		std::lock_guard<std::mutex> lock(mutex_is_reported);
+		if(is_reported){
+			current_unit->parse_async();
+			return true;
+		}
 	}
 	return false;
 }
@@ -169,6 +180,8 @@ void File::set_translation_unit(std::shared_ptr<TranslationUnit> unit){
 	}
 	current_unit = unit;
 	if(current_unit){
+		std::lock_guard<std::mutex> lock(mutex_is_reported);
+		is_reported = false;
 		report_modified();
 	}
 }
@@ -250,27 +263,23 @@ void File::notify_deleted_tu(std::shared_ptr<TranslationUnit> /*unit*/){
 
 void File::notify_updated_tu(std::shared_ptr<TranslationUnit> unit){
 	if(current_unit == unit){
-		if(report_modified_buffered){
+		std::lock_guard<std::mutex> lock(mutex_is_reported);
+		if(!is_reported){
 			report_modified();
 		}
 	}
 }
 
 
+// Internal function. mutex_is_reported must be locked.
 void File::report_modified(){
-	report_modified_buffered = false;
-	if(current_unit){
-		if(current_unit->is_accessible()){
-			if(is_dirty()){
-				current_unit->file_modified(path, content);
-			}else{
-				current_unit->file_unmodified(path);
-			}
+	if(current_unit && current_unit->is_accessible()){
+		if(is_dirty()){
+			current_unit->file_modified(path, content);
 		}else{
-			report_modified_buffered = true;
+			current_unit->file_unmodified(path);
 		}
-	}else{
-		report_modified_buffered = true;
+		is_reported = true;
 	}
 }
 

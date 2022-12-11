@@ -484,14 +484,19 @@ bool FileTab::update_cursor_highlighting(const source_location_t &location){
 	bool usr_changed;
 	ASTReferences references;
 	const auto buffer = source_view.get_source_buffer();
+	bool result = true;
 
 	{
 		std::unique_lock<std::mutex> lock;
-		if(file->has_translation_unit() && file->try_with_tu(lock) && file->has_translation_unit_ready(lock)){
-			try{
-				cursor = file->get_cursor_at(lock, location);
-				valid_cursor = true;
-			}catch(const std::runtime_error &/*err*/){
+		if(file->has_translation_unit()){
+			if(file->try_with_tu(lock) && file->has_translation_unit_ready(lock)){
+				try{
+					cursor = file->get_cursor_at(lock, location);
+					valid_cursor = true;
+				}catch(const std::runtime_error &/*err*/){
+				}
+			}else{
+				result = false;
 			}
 		}
 
@@ -549,7 +554,7 @@ bool FileTab::update_cursor_highlighting(const source_location_t &location){
 	}
 	status.something.set_text(context_string);
 
-	return true;
+	return result;
 }
 
 
@@ -1049,6 +1054,7 @@ void FileTab::on_button_choose_tu(){
 void FileTab::on_button_save(){
 	file->save();
 	set_display_name();
+	status_translation_unit = update_status_e::OUTDATED;
 }
 
 
