@@ -223,7 +223,33 @@ bool CompletionProvider::match_vfunc(const Glib::RefPtr<const Gsv::CompletionCon
 		// Need out-of-band signaling?
 		return true;
 	}else if(activation_reason == Gsv::COMPLETION_ACTIVATION_INTERACTIVE){
-		// TODO
+		const std::vector<std::string> triggers = {
+			".",
+			"->",
+			//"::",
+		};
+		bool found_trigger = false;
+		for(const std::string &act : triggers){
+			bool mismatch = false;
+			auto current_pos = iter_start;
+			for(size_t i=act.length(); i>0; i--){
+				if(current_pos.starts_line()){
+					mismatch = true;
+					break;
+				}
+				current_pos.backward_char();
+				const auto character = act.at(i-1);
+				if(character < 0 || current_pos.get_char() != static_cast<unsigned char>(character)){
+					mismatch = true;
+					break;
+				}
+			}
+			if(!mismatch){
+				found_trigger = true;
+				break;
+			}
+		}
+		return found_trigger;
 	}
 	return false;
 }
