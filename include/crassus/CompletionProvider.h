@@ -13,6 +13,7 @@ public:
 
 private:
 	const Glib::ustring name = "libclang";
+	const size_t longest_prefix_allowed = 24;
 	Glib::RefPtr<Gdk::Pixbuf> m_pixbuf;
 	std::map<availability_e, Glib::RefPtr<Gdk::Pixbuf>> availability_icons;
 	Gtk::Label info_widget;

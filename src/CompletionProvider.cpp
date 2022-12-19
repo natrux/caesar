@@ -89,14 +89,13 @@ void CompletionProvider::populate_vfunc(const Glib::RefPtr<Gsv::CompletionContex
 	if(!file->has_translation_unit()){
 		return;
 	}
-	std::vector<Glib::RefPtr<Gsv::CompletionProposal>> proposals;
 
 	std::vector<completion_t> completions;
 	{
-		const Gtk::TextIter iter_end = context->get_iter();
-		const source_location_t location_end = get_location(iter_end);
-		const Gtk::TextIter iter_start = iter_backward_alphanumerical(iter_end);
-		const source_location_t location_start = get_location(iter_start);
+		const auto iter_end = context->get_iter();
+		const auto location_end = get_location(iter_end);
+		const auto iter_start = iter_backward_alphanumerical(iter_end);
+		const auto location_start = get_location(iter_start);
 
 		if(last_completion_context == context && location_start.equals(last_start_pos)){
 			// reuse last_completions
@@ -127,7 +126,6 @@ void CompletionProvider::populate_vfunc(const Glib::RefPtr<Gsv::CompletionContex
 		}
 	}
 
-	const size_t longest_prefix_allowed = 24;
 	size_t longest_prefix = 0;
 	for(const auto &completion : completions){
 		size_t prefix_length = 0;
@@ -141,6 +139,7 @@ void CompletionProvider::populate_vfunc(const Glib::RefPtr<Gsv::CompletionContex
 		longest_prefix = std::max(longest_prefix, std::min(prefix_length, longest_prefix_allowed));
 	}
 
+	std::vector<Glib::RefPtr<Gsv::CompletionProposal>> proposals;
 	proposal_source.clear();
 	for(const auto &completion : completions){
 		std::string text;
@@ -204,7 +203,7 @@ bool CompletionProvider::match_vfunc(const Glib::RefPtr<const Gsv::CompletionCon
 	const auto iter_end = context->get_iter();
 	const auto location_end = get_location(iter_end);
 	const auto iter_start = iter_backward_alphanumerical(iter_end);
-	const source_location_t location_start = get_location(iter_start);
+	const auto location_start = get_location(iter_start);
 	const auto activation_reason = context->get_activation();
 
 	if(activation_reason == Gsv::COMPLETION_ACTIVATION_USER_REQUESTED){
@@ -228,7 +227,6 @@ bool CompletionProvider::match_vfunc(const Glib::RefPtr<const Gsv::CompletionCon
 			"->",
 			//"::",
 		};
-		bool found_trigger = false;
 		for(const std::string &act : triggers){
 			bool mismatch = false;
 			auto current_pos = iter_start;
@@ -245,11 +243,9 @@ bool CompletionProvider::match_vfunc(const Glib::RefPtr<const Gsv::CompletionCon
 				}
 			}
 			if(!mismatch){
-				found_trigger = true;
-				break;
+				return true;
 			}
 		}
-		return found_trigger;
 	}
 	return false;
 }
