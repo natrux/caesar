@@ -286,7 +286,7 @@ void FileTab::set_location(const source_location_t &location, bool scroll_to){
 		throw std::logic_error("Wrong file");
 	}
 	const auto buffer = source_view.get_buffer();
-	auto iter = buffer->get_iter_at_line_offset(location.row-1, location.column-1);
+	auto iter = buffer->get_iter_at_line_index(location.row-1, location.column-1);
 	buffer->place_cursor(iter);
 	if(scroll_to){
 		/*
@@ -400,7 +400,7 @@ source_location_t FileTab::get_location(const Gtk::TextIter &iter) const{
 	source_location_t result;
 	result.file = file->get_path();
 	result.row = iter.get_line() + 1;
-	result.column = iter.get_line_offset() + 1;
+	result.column = iter.get_line_index() + 1;
 	result.offset = -1;
 	return result;
 }
@@ -524,8 +524,8 @@ bool FileTab::update_cursor_highlighting(const source_location_t &location){
 			if(ref_cursor.spelling_range.begin.file != file->get_path() || ref_cursor.spelling_range.end.file != file->get_path()){
 				continue;
 			}
-			const Gtk::TextIter start = buffer->get_iter_at_line_offset(ref_cursor.spelling_range.begin.row-1, ref_cursor.spelling_range.begin.column-1);
-			const Gtk::TextIter end = buffer->get_iter_at_line_offset(ref_cursor.spelling_range.end.row-1, ref_cursor.spelling_range.end.column-1);
+			const Gtk::TextIter start = buffer->get_iter_at_line_index(ref_cursor.spelling_range.begin.row-1, ref_cursor.spelling_range.begin.column-1);
+			const Gtk::TextIter end = buffer->get_iter_at_line_index(ref_cursor.spelling_range.end.row-1, ref_cursor.spelling_range.end.column-1);
 			buffer->apply_tag(tag_highlight_cursor, start, end);
 		}
 		current_cursor_highlight_usr = usr;
@@ -852,7 +852,7 @@ void FileTab::show_diagnostic(const diagnostic_t &diagnostic, const Glib::RefPtr
 
 	if(!mark_category.empty()){
 		if(diagnostic.location.row > 0){
-			Gtk::TextIter iter = buffer->get_iter_at_line_offset(diagnostic.location.row-1, 0);
+			Gtk::TextIter iter = buffer->get_iter_at_line_index(diagnostic.location.row-1, 0);
 			auto mark = buffer->create_source_mark(mark_category, iter);
 			// This seems to be necessary due to:
 			// https://gitlab.gnome.org/GNOME/gtksourceviewmm/-/issues/2
@@ -864,8 +864,8 @@ void FileTab::show_diagnostic(const diagnostic_t &diagnostic, const Glib::RefPtr
 	if(tag_range){
 		for(const auto &range : diagnostic.ranges){
 			if(range.begin.row > 0 && range.end.row > 0 && range.begin.column > 0 && range.end.column > 0){
-				const Gtk::TextIter start = buffer->get_iter_at_line_offset(range.begin.row-1, range.begin.column-1);
-				const Gtk::TextIter end = buffer->get_iter_at_line_offset(range.end.row-1, range.end.column-1);
+				const Gtk::TextIter start = buffer->get_iter_at_line_index(range.begin.row-1, range.begin.column-1);
+				const Gtk::TextIter end = buffer->get_iter_at_line_index(range.end.row-1, range.end.column-1);
 				buffer->apply_tag(tag_range, start, end);
 			}
 		}

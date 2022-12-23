@@ -74,7 +74,7 @@ source_location_t CompletionProvider::get_location(const Gtk::TextIter &iter) co
 	source_location_t result;
 	result.file = file->get_path();
 	result.row = iter.get_line() + 1;
-	result.column = iter.get_line_offset() + 1;
+	result.column = iter.get_line_index() + 1;
 	result.offset = -1;
 	return result;
 }

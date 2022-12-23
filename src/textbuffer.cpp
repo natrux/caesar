@@ -5,8 +5,8 @@ void apply_tag(const Glib::RefPtr<Gtk::TextBuffer> &text_buffer, const Glib::Ref
 	if(range.begin.row == 0 || range.begin.column == 0 || range.end.row == 0 || range.end.column == 0){
 		return;
 	}
-	const Gtk::TextIter start = text_buffer->get_iter_at_line_offset(range.begin.row-1, range.begin.column-1);
-	const Gtk::TextIter end = text_buffer->get_iter_at_line_offset(range.end.row-1, range.end.column-1);
+	const Gtk::TextIter start = text_buffer->get_iter_at_line_index(range.begin.row-1, range.begin.column-1);
+	const Gtk::TextIter end = text_buffer->get_iter_at_line_index(range.end.row-1, range.end.column-1);
 	text_buffer->apply_tag(tag, start, end);
 }
 
@@ -18,8 +18,8 @@ static void replace(const Glib::RefPtr<Gtk::TextBuffer> &text_buffer, const Gtk:
 
 
 void apply_fixit(const Glib::RefPtr<Gtk::TextBuffer> &text_buffer, const fixit_t &fixit){
-	const auto iter_start = text_buffer->get_iter_at_line_offset(fixit.range.begin.row-1, fixit.range.begin.column-1);
-	const auto iter_end = text_buffer->get_iter_at_line_offset(fixit.range.end.row-1, fixit.range.end.column-1);
+	const auto iter_start = text_buffer->get_iter_at_line_index(fixit.range.begin.row-1, fixit.range.begin.column-1);
+	const auto iter_end = text_buffer->get_iter_at_line_index(fixit.range.end.row-1, fixit.range.end.column-1);
 	text_buffer->begin_user_action();
 	replace(text_buffer, iter_start, iter_end, fixit.replace);
 	text_buffer->end_user_action();
@@ -48,8 +48,8 @@ void apply_fixits(const Glib::RefPtr<Gtk::TextBuffer> &text_buffer, const std::v
 	for(const fixit_t &fixit : fixits){
 		gtk_fixit_t gtk_fixit;
 		gtk_fixit.fixit_t::operator=(fixit);
-		const auto iter_start = text_buffer->get_iter_at_line_offset(fixit.range.begin.row-1, fixit.range.begin.column-1);
-		const auto iter_end = text_buffer->get_iter_at_line_offset(fixit.range.end.row-1, fixit.range.end.column-1);
+		const auto iter_start = text_buffer->get_iter_at_line_index(fixit.range.begin.row-1, fixit.range.begin.column-1);
+		const auto iter_end = text_buffer->get_iter_at_line_index(fixit.range.end.row-1, fixit.range.end.column-1);
 		gtk_fixit.begin = text_buffer->create_mark(iter_start);
 		gtk_fixit.end = text_buffer->create_mark(iter_end);
 		inserts.push_back(gtk_fixit);
