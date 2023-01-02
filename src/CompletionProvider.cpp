@@ -100,7 +100,13 @@ void CompletionProvider::populate_vfunc(const Glib::RefPtr<Gsv::CompletionContex
 		if(last_completion_context == context && location_start.equals(last_start_pos)){
 			// reuse last_completions
 		}else{
-			last_completions = file->code_complete(location_start);
+			source_location_t location_completion = location_start;
+			const auto activation = context->get_activation();
+			if(activation == Gsv::COMPLETION_ACTIVATION_INTERACTIVE){
+				location_completion = location_end;
+			}
+			// TODO: asynchronous?
+			last_completions = file->code_complete(location_completion);
 		}
 		last_completion_context = context;
 		last_start_pos = location_start;
@@ -206,22 +212,32 @@ bool CompletionProvider::match_vfunc(const Glib::RefPtr<const Gsv::CompletionCon
 	const auto location_start = get_location(iter_start);
 	const auto activation_reason = context->get_activation();
 
+	const bool is_drag =
+		last_start_pos.file == location_start.file &&
+		last_end_pos.file == location_end.file &&
+		!last_start_pos.equals(location_start) &&
+		(last_end_pos.row == location_end.row && abs_diff(last_end_pos.column, location_end.column) == 1) &&
+	true;
+
 	if(activation_reason == Gsv::COMPLETION_ACTIVATION_USER_REQUESTED){
-		if(
-			last_completion_context == context &&
-			last_start_pos.file == location_start.file &&
-			last_end_pos.file == location_end.file &&
-			!last_start_pos.equals(location_start) &&
-			(last_end_pos.row == location_end.row && abs_diff(last_end_pos.column, location_end.column) == 1)
-		){
-			// Prevent completion dragging
+		if(last_completion_context == context && is_drag){
 			return false;
 		}
+
 		// TODO: If user cancels with ESC key and then types a character, we also get a USER_REQUESTED.
 		// We want to reject it, but it looks exactly like a _real_ user request.
 		// Need out-of-band signaling?
+
 		return true;
 	}else if(activation_reason == Gsv::COMPLETION_ACTIVATION_INTERACTIVE){
+		if(last_completion_context == context){
+			if(is_drag){
+				return false;
+			}else{
+				return true;
+			}
+		}
+
 		const std::vector<std::string> triggers = {
 			".",
 			"->",
@@ -229,7 +245,7 @@ bool CompletionProvider::match_vfunc(const Glib::RefPtr<const Gsv::CompletionCon
 		};
 		for(const std::string &act : triggers){
 			bool mismatch = false;
-			auto current_pos = iter_start;
+			auto current_pos = iter_end;
 			for(size_t i=act.length(); i>0; i--){
 				if(current_pos.starts_line()){
 					mismatch = true;
@@ -243,6 +259,21 @@ bool CompletionProvider::match_vfunc(const Glib::RefPtr<const Gsv::CompletionCon
 				}
 			}
 			if(!mismatch){
+				return true;
+			}
+		}
+
+		const size_t min_interactive = 1;
+		const size_t max_interactive = 0;
+		if(min_interactive <= max_interactive){
+			auto current_pos = iter_end;
+			current_pos.backward_char();
+			size_t count = 0;
+			while(count <= max_interactive && !current_pos.starts_line() && is_alphanumerical(current_pos.get_char())){
+				current_pos.backward_char();
+				count++;
+			}
+			if(count >= min_interactive && count <= max_interactive){
 				return true;
 			}
 		}
