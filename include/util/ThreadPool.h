@@ -12,6 +12,8 @@ class ThreadPool{
 public:
 	ThreadPool(size_t size);
 
+	~ThreadPool();
+
 	// Starts all threads and makes them wait for jobs.
 	void start();
 

@@ -16,7 +16,6 @@
 class TUServer : public TUParser, public TUParent, public TUObservable{
 public:
 	TUServer();
-	~TUServer();
 	void register_observer(TUObserver *obs, bool send_digest) override;
 	void unregister_observer(TUObserver *obs) override;
 	void update(const CompilationDatabase &database);

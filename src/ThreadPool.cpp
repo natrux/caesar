@@ -9,6 +9,13 @@ ThreadPool::ThreadPool(size_t size):
 }
 
 
+ThreadPool::~ThreadPool(){
+	close();
+	cancel();
+	join();
+}
+
+
 void ThreadPool::start(){
 	for(auto &thread : threads){
 		thread = std::thread(std::bind(&ThreadPool::job_loop, this));

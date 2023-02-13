@@ -10,13 +10,6 @@ TUServer::TUServer() :
 }
 
 
-TUServer::~TUServer(){
-	parsing_pool.close();
-	parsing_pool.cancel();
-	parsing_pool.join();
-}
-
-
 void TUServer::register_observer(TUObserver *obs, bool send_digest){
 	{
 		std::lock_guard<std::mutex> lock(mutex_observers);
