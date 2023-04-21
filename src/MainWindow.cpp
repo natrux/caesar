@@ -71,7 +71,7 @@ void MainWindow::update_display_names() const{
 	for(const auto &p : projects){
 		project_paths.push_back(p->get_build_directory());
 	}
-	std::vector<std::string> names = file_path_short(project_paths);
+	const std::vector<std::string> names = file_path_short(project_paths);
 
 	size_t i = 0;
 	for(const auto &p : projects){

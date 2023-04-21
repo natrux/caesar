@@ -5,7 +5,7 @@
 #include <map>
 
 
-std::vector<std::string> uri_short(const std::vector<std::string> &input, char separator){
+std::vector<std::string> uri_short(const std::vector<std::string> &input, char separator, const std::string &ellipsis){
 	std::vector<std::vector<std::string>> gap_set;
 	std::vector<std::set<size_t>> clusters(1);
 	size_t max_position = 0;
@@ -60,7 +60,7 @@ std::vector<std::string> uri_short(const std::vector<std::string> &input, char s
 		while(i < entry.size()){
 			if(entry[i].empty()){
 				if(!path.empty()){
-					path += "...";
+					path += ellipsis;
 					path.push_back(separator);
 				}
 				// by construction, the last crumb (the filename) is never empty.
@@ -88,7 +88,7 @@ std::vector<std::string> file_path_short(const std::vector<std::string> &input){
 #else
 	const char path_sep = '/';
 #endif
-	return uri_short(input, path_sep);
+	return uri_short(input, path_sep, "...");
 }
 
 
