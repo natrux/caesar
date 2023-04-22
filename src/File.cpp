@@ -84,19 +84,19 @@ bool File::is_dirty() const{
 }
 
 
-std::unique_lock<std::mutex> File::with_tu() const{
+std::unique_lock<std::mutex> File::lock_tu() const{
 	if(!current_unit){
 		throw std::logic_error("No translation unit set");
 	}
-	return current_unit->with();
+	return current_unit->lock();
 }
 
 
-bool File::try_with_tu(std::unique_lock<std::mutex> &lock) const{
+std::unique_ptr<std::unique_lock<std::mutex>> File::try_lock_tu() const{
 	if(!current_unit){
 		throw std::logic_error("No translation unit set");
 	}
-	return current_unit->try_with(lock);
+	return current_unit->try_lock();
 }
 
 

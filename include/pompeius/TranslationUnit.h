@@ -25,8 +25,8 @@ public:
 	static const unsigned int complete_options;
 
 	TranslationUnit(std::shared_ptr<const Index> index, const std::string &main_file_, const std::vector<std::string> &compile_commands_);
-	std::unique_lock<std::mutex> with() const;
-	bool try_with(std::unique_lock<std::mutex> &lock) const;
+	std::unique_lock<std::mutex> lock() const;
+	std::unique_ptr<std::unique_lock<std::mutex>> try_lock() const;
 	void set_parser(TUParser *p);
 	void set_parent(TUParent *p);
 	std::string get_main_file() const;

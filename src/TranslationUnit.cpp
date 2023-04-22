@@ -3,6 +3,8 @@
 
 #include <pompeius/TranslationUnit.h>
 
+#include <util/unique_ptr.h>
+
 
 const unsigned int TranslationUnit::default_parse_options = 
 	CXTranslationUnit_None |
@@ -41,18 +43,17 @@ TranslationUnit::TranslationUnit(std::shared_ptr<const Index> index, const std::
 }
 
 
-std::unique_lock<std::mutex> TranslationUnit::with() const{
+std::unique_lock<std::mutex> TranslationUnit::lock() const{
 	return std::unique_lock<std::mutex>(mutex);
 }
 
 
-bool TranslationUnit::try_with(std::unique_lock<std::mutex> &lock) const{
-	std::unique_lock<std::mutex> new_lock(mutex, std::try_to_lock);
-	if(new_lock.owns_lock()){
-		std::swap(lock, new_lock);
-		return true;
+std::unique_ptr<std::unique_lock<std::mutex>> TranslationUnit::try_lock() const{
+	auto lock = std::make_unique<std::unique_lock<std::mutex>>(mutex, std::try_to_lock);
+	if(lock->owns_lock()){
+		return lock;
 	}
-	return false;
+	return nullptr;
 }
 
 
@@ -156,8 +157,7 @@ bool TranslationUnit::is_initialized() const{
 
 
 bool TranslationUnit::is_ready() const{
-	std::unique_lock<std::mutex> lock;
-	if(try_with(lock)){
+	if(auto lock = try_lock()){
 		return (state == state_e::READY);
 	}
 	return false;
@@ -171,8 +171,7 @@ bool TranslationUnit::is_ready(const std::unique_lock<std::mutex> &lock) const{
 
 
 bool TranslationUnit::is_accessible() const{
-	std::unique_lock<std::mutex> lock;
-	if(try_with(lock)){
+	if(auto lock = try_lock()){
 		return state != state_e::PARSING;
 	}
 	return false;
@@ -186,7 +185,7 @@ bool TranslationUnit::is_accessible(const std::unique_lock<std::mutex> &lock) co
 
 
 cursor_t TranslationUnit::get_location(const std::string &file, size_t row, size_t column) const{
-	return get_location(with(), file, row, column);
+	return get_location(lock(), file, row, column);
 }
 
 
@@ -233,7 +232,7 @@ std::vector<diagnostic_t> TranslationUnit::get_diagnostics() const{
 
 
 ASTReferences TranslationUnit::get_references(const cursor_t &cursor, const std::string &file) const{
-	return get_references(with(), cursor, file);
+	return get_references(lock(), cursor, file);
 }
 
 
@@ -257,7 +256,7 @@ ASTReferences TranslationUnit::get_all_references(const cursor_t &cursor) const{
 
 
 std::vector<cursor_t> TranslationUnit::get_cursors(const std::string &file) const{
-	return get_cursors(with(), file);
+	return get_cursors(lock(), file);
 }
 
 

@@ -22,8 +22,8 @@ public:
 	std::string get_content() const;
 	bool parse_translation_unit() const;
 	bool is_dirty() const;
-	std::unique_lock<std::mutex> with_tu() const;
-	bool try_with_tu(std::unique_lock<std::mutex> &lock) const;
+	std::unique_lock<std::mutex> lock_tu() const;
+	std::unique_ptr<std::unique_lock<std::mutex>> try_lock_tu() const;
 	bool has_translation_unit() const;
 	bool has_translation_unit(const std::shared_ptr<TranslationUnit> &unit) const;
 	bool has_translation_unit_ready() const;

@@ -416,9 +416,10 @@ source_location_t FileTab::get_location(int x, int y) const{
 
 
 cursor_t FileTab::get_cursor_at(const source_location_t &location) const{
-	std::unique_lock<std::mutex> lock;
-	if(file->try_with_tu(lock) && file->has_translation_unit_ready(lock)){
-		return file->get_cursor_at(lock, location);
+	if(auto lock = file->try_lock_tu()){
+		if(file->has_translation_unit_ready(*lock)){
+			return file->get_cursor_at(*lock, location);
+		}
 	}
 	throw std::runtime_error("Translation unit not ready");
 }
@@ -480,36 +481,35 @@ bool FileTab::update_cursor_highlighting(const source_location_t &location){
 	cursor_t cursor;
 	bool valid_cursor = false;
 	bool spelling_cursor = false;
-	std::string usr;
-	bool usr_changed;
+	std::string usr = cursor.get_usr_ref();
+	bool usr_changed = (current_cursor_highlight_usr != usr);
 	ASTReferences references;
 	const auto buffer = source_view.get_source_buffer();
 	bool result = true;
 
-	{
-		std::unique_lock<std::mutex> lock;
-		if(file->has_translation_unit()){
-			if(file->try_with_tu(lock) && file->has_translation_unit_ready(lock)){
+	if(file->has_translation_unit()){
+		if(auto lock = file->try_lock_tu()){
+			if(file->has_translation_unit_ready(*lock)){
 				try{
-					cursor = file->get_cursor_at(lock, location);
+					cursor = file->get_cursor_at(*lock, location);
 					valid_cursor = true;
 				}catch(const std::runtime_error &/*err*/){
 				}
 			}else{
 				result = false;
 			}
-		}
 
-		// lookup finds the "closest" match, so might actually be the surrounding stuff.
-		if(valid_cursor){
-			spelling_cursor = cursor.spelling_range.contains(location);
-		}
-
-		usr = cursor.get_usr_ref();
-		usr_changed = (current_cursor_highlight_usr != usr);
-
-		if(spelling_cursor && usr_changed){
-			references = file->get_references(lock, cursor);
+			if(valid_cursor){
+				// lookup finds the "closest" match, so might actually be the surrounding stuff.
+				spelling_cursor = cursor.spelling_range.contains(location);
+				usr = cursor.get_usr_ref();
+				usr_changed = (current_cursor_highlight_usr != usr);
+				if(spelling_cursor && usr_changed){
+					references = file->get_references(*lock, cursor);
+				}
+			}
+		}else{
+			result = false;
 		}
 	}
 
@@ -565,10 +565,11 @@ bool FileTab::update_semantic_highlighting(){
 	const auto buffer = source_view.get_source_buffer();
 
 	if(has_tu){
-		std::unique_lock<std::mutex> lock;
-		if(file->try_with_tu(lock) && file->has_translation_unit_ready(lock)){
-			tu_ready = true;
-			cursors = file->get_cursors(lock);
+		if(auto lock = file->try_lock_tu()){
+			if(file->has_translation_unit_ready(*lock)){
+				tu_ready = true;
+				cursors = file->get_cursors(*lock);
+			}
 		}
 	}
 
@@ -729,12 +730,13 @@ bool FileTab::update_diagnostics_highlighting(){
 	bool tu_ready = false;
 
 	if(has_tu){
-		std::unique_lock<std::mutex> lock;
-		if(file->try_with_tu(lock) && file->has_translation_unit_ready(lock)){
-			tu_ready = true;
-			// get_diagnostics() does not need the full lock, only the parsed_info lock.
-			// But if I can get the full lock, I don't have to wait for the small one.
-			diagnostics = file->get_diagnostics();
+		if(auto lock = file->try_lock_tu()){
+			if(file->has_translation_unit_ready(*lock)){
+				tu_ready = true;
+				// get_diagnostics() does not need the full lock, only the parsed_info lock.
+				// But if I can get the full lock anyway, might as well use it.
+				diagnostics = file->get_diagnostics();
+			}
 		}
 	}
 
