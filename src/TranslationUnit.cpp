@@ -5,6 +5,8 @@
 
 #include <util/unique_ptr.h>
 
+#include <stdexcept>
+
 
 const unsigned int TranslationUnit::default_parse_options = 
 	CXTranslationUnit_None |
@@ -316,7 +318,7 @@ CXChildVisitResult TranslationUnit::visit_find_references(CXCursor cursor, CXCur
 void TranslationUnit::visit_includes(CXFile included_file, CXSourceLocation */*inclusion_stack*/, unsigned int /*include_len*/, CXClientData client_data){
 	auto &data = *reinterpret_cast<visit_includes_data_t *>(client_data);
 
-	std::string filename = convert(clang_getFileName(included_file));
+	const std::string filename = convert(clang_getFileName(included_file));
 	if(filename != data.main_file){
 		data.included_files->insert(filename);
 	}
