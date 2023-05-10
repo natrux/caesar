@@ -148,6 +148,7 @@ private:
 	source_location_t get_current_location();
 	source_location_t get_location(const Gtk::TextIter &iter) const;
 	source_location_t get_location(int x, int y) const;
+	Gtk::TextIter get_location(const source_location_t &location);
 	cursor_t get_cursor_at(const source_location_t &location) const;
 	bool check_scroll_to_insert();
 	void update_highlighting();
@@ -165,6 +166,7 @@ private:
 	bool on_key_press_event(GdkEventKey *event) override;
 	bool on_source_view_mouse_moved(GdkEventMotion *event);
 	void on_text_changed();
+	void on_insert(const Gtk::TextIter &pos, const std::string &text, int bytes);
 	bool on_button_press(GdkEventButton *event);
 	void on_cursor_moved();
 	void on_line_mark_activated(Gtk::TextIter &position, GdkEvent *event);

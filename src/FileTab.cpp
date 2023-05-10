@@ -6,6 +6,7 @@
 #include <util/unique_ptr.h>
 #include <util/textbuffer.h>
 #include <util/ordering_e.h>
+#include <util/strings.h>
 
 #include <gtksourceview/gtksource.h>
 
@@ -22,7 +23,6 @@ FileTab::FileTab(const std::string &path_file)
 	source_view.set_show_line_numbers(true);
 	source_view.set_show_line_marks(true);
 	source_view.set_tab_width(8);
-	source_view.set_auto_indent(true);
 	source_view.set_insert_spaces_instead_of_tabs(false);
 	source_view.set_indent_on_tab(true);
 	source_view.set_smart_home_end(Gsv::SMART_HOME_END_BEFORE);
@@ -69,6 +69,7 @@ FileTab::FileTab(const std::string &path_file)
 	buffer->set_text(file->get_content());
 	buffer->end_not_undoable_action();
 	buffer->signal_changed().connect(std::bind(&FileTab::on_text_changed, this));
+	buffer->signal_insert().connect(std::bind(&FileTab::on_insert, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 	buffer->property_cursor_position().signal_changed().connect(std::bind(&FileTab::on_cursor_moved, this));
 
 	source_map = std::unique_ptr<Gtk::Widget>(Glib::wrap(gtk_source_map_new()));
@@ -412,6 +413,18 @@ source_location_t FileTab::get_location(int x, int y) const{
 	Gtk::TextIter iter;
 	source_view.get_iter_at_location(iter, buffer_x, buffer_y);
 	return get_location(iter);
+}
+
+
+Gtk::TextIter FileTab::get_location(const source_location_t &location){
+	if(location.file != file->get_path()){
+		throw std::logic_error("Wrong file");
+	}
+	if(location.row == 0 || location.column == 0){
+		throw std::logic_error("Invalid location L" + std::to_string(location.row) + "C" + std::to_string(location.column));
+	}
+	const auto buffer = source_view.get_source_buffer();
+	return buffer->get_iter_at_line_index(location.row-1, location.column-1);
 }
 
 
@@ -980,6 +993,73 @@ void FileTab::on_text_changed(){
 	file->set_content(buffer->get_text());
 	set_display_name();
 	status_translation_unit = update_status_e::OUTDATED;
+}
+
+
+void FileTab::on_insert(const Gtk::TextIter &pos, const std::string &text, int bytes){
+	// not cool, but no other way
+	Gtk::TextIter &pos_mut = const_cast<Gtk::TextIter &>(pos);
+	auto location = get_location(pos);
+
+	const bool is_line_break = (string_ends_with(text, "\n") || string_ends_with(text, "\r\n"));
+	const auto buffer = source_view.get_source_buffer();
+	if(is_line_break && location.row > 1){
+		// auto indent
+		auto iter_previous_line = pos;
+		iter_previous_line.backward_line();
+		iter_previous_line.set_line_index(0);
+		size_t num_indents = 0;
+		while(!iter_previous_line.is_end() && iter_previous_line.get_char() == '\t'){
+			num_indents++;
+			iter_previous_line.forward_char();
+		}
+
+		iter_previous_line.forward_to_line_end();
+		if(iter_previous_line.get_line() == pos.get_line()){
+			// We jumped to the next line, which means we were already at the end of the previous line.
+			// So the line consists of only tabs and should be cleared.
+			iter_previous_line.backward_line();
+			auto line_start = iter_previous_line;
+			line_start.set_line_index(0);
+			iter_previous_line.forward_to_line_end();
+			if(line_start.get_line() == iter_previous_line.get_line()){
+				buffer->erase(line_start, iter_previous_line);
+				pos_mut = get_location(location);
+			}
+		}else if(!iter_previous_line.is_start()){
+			const std::vector<gunichar> add_indent = {'{', '[', '('};
+			// check last character of previous line, add one level of indent
+			iter_previous_line.backward_char();
+			const auto last_char = iter_previous_line.get_char();
+			for(const auto &chr : add_indent){
+				if(last_char == chr){
+					num_indents++;
+					break;
+				}
+			}
+		}
+
+		buffer->insert(pos, std::string(num_indents, '\t'));
+		location.column += num_indents;
+		pos_mut = get_location(location);
+	}else if(bytes == 1 && text.length() == 1){
+		const auto chr = text.front();
+		if(chr == '}'){
+			// reduce indent level by one
+			auto iter = pos;
+			iter.backward_char();
+			if(!iter.is_start()){
+				iter.backward_char();
+				if(iter.get_char() == '\t'){
+					auto after = iter;
+					after.forward_char();
+					buffer->erase(iter, after);
+					location.column--;
+					pos_mut = get_location(location);
+				}
+			}
+		}
+	}
 }
 
 
