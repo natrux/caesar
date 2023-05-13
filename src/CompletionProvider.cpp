@@ -118,7 +118,7 @@ void CompletionProvider::populate_vfunc(const Glib::RefPtr<Gsv::CompletionContex
 			try{
 				const std::string typed_text = completion.get_typed_text();
 				is_relevant = is_relevant || string_starts_with(typed_text, input);
-			}catch(const std::runtime_error &err){
+			}catch(const std::runtime_error &/*err*/){
 				// The docs says a completion will always have exactly one TYPED_TEXT.
 				// But for example
 				//     my_func(
@@ -183,6 +183,9 @@ void CompletionProvider::populate_vfunc(const Glib::RefPtr<Gsv::CompletionContex
 			label = std::string(longest_prefix - prefix.size(), ' ') + prefix;
 		}else{
 			label = prefix.substr(0, longest_prefix-1) + "…";
+		}
+		for(const auto &fixit : completion.fixits){
+			label += "[" + fixit.replace + "]";
 		}
 		label += label_main;
 		if(!return_type.empty()){
