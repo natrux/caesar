@@ -1,5 +1,6 @@
 #include <util/ThreadPool.h>
 
+#include <stdexcept>
 #include <limits>
 
 
@@ -40,7 +41,7 @@ void ThreadPool::status(){
 	if(!exceptions.empty()){
 		auto ex = exceptions.front();
 		exceptions.pop();
-		throw ex;
+		std::rethrow_exception(ex);
 	}
 }
 
@@ -117,9 +118,9 @@ void ThreadPool::job_loop(){
 		if(job){
 			try{
 				job();
-			}catch(const std::runtime_error &err){
+			}catch(...){
 				std::lock_guard<std::mutex> lock(mutex_exceptions);
-				exceptions.push(err);
+				exceptions.push(std::current_exception());
 			}
 			{
 				std::lock_guard<std::mutex> lock(mutex_jobs);

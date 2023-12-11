@@ -6,7 +6,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <functional>
-#include <stdexcept>
+#include <exception>
 
 
 class ThreadPool{
@@ -18,10 +18,10 @@ public:
 	// Starts all threads and makes them wait for jobs.
 	void start();
 
-	// Adds a job to the outstanding jobs. job is allowed to throw std::runtime_error which can then be retrieved with status().
+	// Adds a job to the outstanding jobs. job is allowed to throw any exception which can then be retrieved with status().
 	void add_job(const std::function<void()> &job);
 
-	// Throws the next collected exception (std::runtime_error), if any.
+	// Throws the next collected exception, if any.
 	void status();
 
 	// Waits until all pending jobs have been processed.
@@ -49,7 +49,7 @@ private:
 	size_t jobs_in_progress = 0;
 
 	std::mutex mutex_exceptions;
-	std::queue<std::runtime_error> exceptions;
+	std::queue<std::exception_ptr> exceptions;
 
 	void job_loop();
 };
