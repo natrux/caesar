@@ -18,12 +18,9 @@ add_compile_options(
 )
 SET(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_BUILD_TYPE Debug)
-LIST(APPEND CMAKE_MODULE_PATH
-	${CMAKE_SOURCE_DIR}/cmake
-)
 
 find_package(Clang REQUIRED)
-find_package(LLVM REQUIRED)
+set(CLANG_CLANG_LIB libclang)
 find_package(Threads REQUIRED)
 find_package(PkgConfig REQUIRED)
 

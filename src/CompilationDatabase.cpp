@@ -10,11 +10,20 @@
 
 
 CompilationDatabase::CompilationDatabase(){
-	// We want clang_version == "X.Y.Z". The docs says clang_getClangVersion() may change its format in the future, so keep an eye on that.
+	// We want clang_version to be the major release.
+	// The docs says clang_getClangVersion() may change its format in the future, so keep an eye on that.
 	clang_version = convert(clang_getClangVersion());
-	const size_t pos = clang_version.rfind(' ');
-	if(pos != std::string::npos){
-		clang_version = clang_version.substr(pos+1);
+	{
+		const size_t pos = clang_version.rfind(' ');
+		if(pos != std::string::npos){
+			clang_version = clang_version.substr(pos+1);
+		}
+	}
+	{
+		const size_t pos = clang_version.find('.');
+		if(pos != std::string::npos){
+			clang_version = clang_version.substr(0, pos);
+		}
 	}
 }
 
