@@ -111,7 +111,7 @@ completion_t convert(const CXCompletionResult &completion_result){
 	result.priority = clang_getCompletionPriority(completion_result.CompletionString);
 	result.availability = convert(clang_getCompletionAvailability(completion_result.CompletionString));
 	result.brief_comment = convert(clang_getCompletionBriefComment(completion_result.CompletionString));
-	size_t num_annotations = clang_getCompletionNumAnnotations(completion_result.CompletionString);
+	const size_t num_annotations = clang_getCompletionNumAnnotations(completion_result.CompletionString);
 	for(size_t i=0; i<num_annotations; i++){
 		result.annotations.push_back(convert(clang_getCompletionAnnotation(completion_result.CompletionString, i)));
 	}

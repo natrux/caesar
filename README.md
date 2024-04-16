@@ -6,6 +6,9 @@ At the moment, Caesar is meant to help writing code and nothing else.
 No project management, no compilation and no debugging.
 Please do all these things by writing proper build files, invoking the command line and using a standalone debugger.
 
+![screenshot](screenshot.png)
+
+
 # Build
 
 ## Dependencies
@@ -13,7 +16,6 @@ Please do all these things by writing proper build files, invoking the command l
 * A compiler capable of C++11
 * CMake
 * libclang
-* libllvm
 * gtkmm3
 * gtksourceviewmm3
 * PkgConfig
