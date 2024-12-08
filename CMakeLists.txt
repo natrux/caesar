@@ -2,20 +2,28 @@ cmake_minimum_required(VERSION 3.16)
 project(caesar)
 
 set(CMAKE_CXX_STANDARD 11)
+option(GSV3_COMPAT "Use (deprecated) GtkSourceView3" OFF)
 add_compile_options(
 	-Wall -Wextra
 	-Wsuggest-override
-	-Wno-cpp                        # https://gitlab.gnome.org/GNOME/gtksourceviewmm/-/issues/3
 
 	#-Werror
 )
-add_compile_options(
-	# https://gitlab.gnome.org/GNOME/gtksourceview/-/issues/84
-	-DGLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_60
+if(GSV3_COMPAT)
+	add_compile_options(
+		-Wno-cpp                        # https://gitlab.gnome.org/GNOME/gtksourceviewmm/-/issues/3
+	)
+	add_compile_options(
+		# https://gitlab.gnome.org/GNOME/gtksourceview/-/issues/84
+		-DGLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_60
 
-	# if your build fails because of glib version, comment out the above line and uncomment the following one.
-	#-Wno-deprecated-declarations
-)
+		# if your build fails because of glib version, comment out the above line and uncomment the one below.
+		#-Wno-deprecated-declarations
+	)
+	add_compile_options(
+		-D GSV3_COMPAT
+	)
+endif()
 SET(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_BUILD_TYPE Debug)
 
@@ -25,7 +33,11 @@ find_package(Threads REQUIRED)
 find_package(PkgConfig REQUIRED)
 
 pkg_check_modules(GTK3 REQUIRED gtkmm-3.0)
-pkg_check_modules(GSV3 REQUIRED gtksourceviewmm-3.0)
+if(GSV3_COMPAT)
+	pkg_check_modules(GSV REQUIRED gtksourceviewmm-3.0)
+else()
+	pkg_check_modules(GSV REQUIRED gtksourceviewmm-4.0)
+endif()
 
 
 add_library(brutus SHARED
@@ -105,13 +117,13 @@ add_library(crassus SHARED
 target_include_directories(crassus PUBLIC
 	include/
 	${GTK3_INCLUDE_DIRS}
-	${GSV3_INCLUDE_DIRS}
+	${GSV_INCLUDE_DIRS}
 )
 
 target_link_libraries(crassus
 	pompeius
 	${GTK3_LIBRARIES}
-	${GSV3_LIBRARIES}
+	${GSV_LIBRARIES}
 )
 
 

@@ -26,7 +26,18 @@ FileTab::FileTab(const std::string &path_file)
 	source_view.set_insert_spaces_instead_of_tabs(false);
 	source_view.set_indent_on_tab(true);
 	source_view.set_smart_home_end(Gsv::SMART_HOME_END_BEFORE);
+#ifdef GSV3_COMPAT
 	source_view.set_draw_spaces(Gsv::DRAW_SPACES_SPACE | Gsv::DRAW_SPACES_TAB | Gsv::DRAW_SPACES_NBSP | Gsv::DRAW_SPACES_TRAILING);
+#else
+	{
+		// Not exported?
+		auto *space_drawer = gtk_source_view_get_space_drawer(source_view.gobj());
+		gtk_source_space_drawer_set_types_for_locations(space_drawer, GTK_SOURCE_SPACE_LOCATION_LEADING, GTK_SOURCE_SPACE_TYPE_NONE);
+		gtk_source_space_drawer_set_types_for_locations(space_drawer, GTK_SOURCE_SPACE_LOCATION_INSIDE_TEXT, GTK_SOURCE_SPACE_TYPE_NONE);
+		gtk_source_space_drawer_set_types_for_locations(space_drawer, GTK_SOURCE_SPACE_LOCATION_TRAILING, static_cast<GtkSourceSpaceTypeFlags>(GTK_SOURCE_SPACE_TYPE_TAB | GTK_SOURCE_SPACE_TYPE_SPACE | GTK_SOURCE_SPACE_TYPE_NBSP));
+		gtk_source_space_drawer_set_enable_matrix(space_drawer, true);
+	}
+#endif
 	source_view.signal_line_mark_activated().connect(std::bind(&FileTab::on_line_mark_activated, this, std::placeholders::_1, std::placeholders::_2));
 	{
 		const auto completion = source_view.get_completion();
@@ -1150,7 +1161,11 @@ void FileTab::on_button_completion(){
 	// (If that assumption is wrong, this is a memory leak. If it is correct, this is a bug in gtksourceviewmm.)
 	context->reference();
 
+#ifdef GSV3_COMPAT
 	completion->show(completion->get_providers(), context);
+#else
+	completion->start(completion->get_providers(), context);
+#endif
 }
 
 

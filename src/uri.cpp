@@ -32,7 +32,7 @@ std::vector<std::string> uri_short(const std::vector<std::string> &input, char s
 			std::map<std::string, std::set<size_t>> collection;
 			for(size_t index : cluster){
 				const auto &entry = gap_set[index];
-				std::string key = entry[entry.size()-position-1];
+				const auto &key = entry[entry.size()-position-1];
 				collection[key].insert(index);
 			}
 
