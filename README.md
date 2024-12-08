@@ -17,7 +17,7 @@ Please do all these things by writing proper build files, invoking the command l
 * CMake
 * libclang
 * gtkmm3
-* gtksourceviewmm3
+* gtksourceviewmm4 (gtksourceviewmm3 supported by the `GSV3_COMPAT` cmake option)
 * PkgConfig
 
 ## Building
