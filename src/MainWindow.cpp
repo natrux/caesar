@@ -31,7 +31,7 @@ MainWindow::MainWindow(){
 	grid_open_project.attach(label_path_build, 0, 2, 1, 1);
 	grid_open_project.attach(entry_path_build, 1, 2, 1, 1);
 	grid_open_project.attach(button_path_build, 2, 2, 1, 1);
-	grid_open_project.attach(button_open_project, 0, 3, 3, 1);
+	grid_open_project.attach(button_open_project, 0, 3, 2, 1);
 
 	add(tabs_projects);
 
@@ -86,7 +86,9 @@ void MainWindow::on_button_path_project(){
 	dialog.add_button("Select", Gtk::RESPONSE_ACCEPT);
 	dialog.add_button("Cancel", Gtk::RESPONSE_CANCEL);
 	if(dialog.run() == Gtk::RESPONSE_ACCEPT) {
-		entry_path_project.set_text(dialog.get_filename());
+		const std::string path = dialog.get_filename();
+		entry_path_project.set_text(path);
+		entry_path_build.set_text(path + "/build");
 	}
 }
 
