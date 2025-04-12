@@ -63,7 +63,7 @@ CompletionProvider::CompletionProvider(std::shared_ptr<const File> file, Glib::R
 	info_widget.set_lines(-1);
 
 	const auto theme = Gtk::IconTheme::get_default();
-	availability_icons[availability_e::AVAILABLE] = theme->load_icon("emblem-ok-symbolic", 10, Gtk::IconLookupFlags::ICON_LOOKUP_USE_BUILTIN);
+	availability_icons[availability_e::AVAILABLE] = theme->load_icon("gtk-ok", 10, Gtk::IconLookupFlags::ICON_LOOKUP_USE_BUILTIN);
 	availability_icons[availability_e::DEPRECATED] = theme->load_icon("dialog-warning", 10, Gtk::IconLookupFlags::ICON_LOOKUP_USE_BUILTIN);
 	availability_icons[availability_e::NOT_ACCESSIBLE] = theme->load_icon("emblem-readonly", 10, Gtk::IconLookupFlags::ICON_LOOKUP_USE_BUILTIN);
 	availability_icons[availability_e::NOT_AVAILABLE] = theme->load_icon("emblem-unreadable", 10, Gtk::IconLookupFlags::ICON_LOOKUP_USE_BUILTIN);
